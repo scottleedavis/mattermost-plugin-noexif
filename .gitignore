@@ -1,3 +1,4 @@
 dist
-*.iml
+deploy.sh
 .idea
+*.iml

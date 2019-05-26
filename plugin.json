@@ -1,7 +1,7 @@
 {
     "id": "com.github.scottleedavis.mattermost-plugin-noexif",
-    "name": "Sample Plugin",
-    "description": "Srips EXIF data from uploaded images.",
+    "name": "No EXIF Plugin",
+    "description": "Strips EXIF information from uploaded images",
     "version": "0.1.0",
     "server": {
         "executables": {
@@ -9,9 +9,6 @@
             "darwin-amd64": "server/dist/plugin-darwin-amd64",
             "windows-amd64": "server/dist/plugin-windows-amd64.exe"
         }
-    },
-    "webapp": {
-        "bundle_path": "webapp/dist/main.js"
     },
     "settings_schema": {
         "header": "",
