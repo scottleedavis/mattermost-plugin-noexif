@@ -4,7 +4,11 @@ go 1.12
 
 require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
+	github.com/dsoprea/go-exif v0.0.0-20190421204329-061c6b48d883
+	github.com/dsoprea/go-logging v0.0.0-20190409182557-13b4fff49234 // indirect
 	github.com/dyatlov/go-opengraph v0.0.0-20180429202543-816b6608b3c8 // indirect
+	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/golang/geo v0.0.0-20190507233405-a0e886e97a51 // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/websocket v1.4.0 // indirect
