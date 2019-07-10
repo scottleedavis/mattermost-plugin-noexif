@@ -2,6 +2,10 @@
 
 This plugin strips EXIF information from images uploaded to mattermost.
 
+Currently supports jpg/jpeg, and png files.
+
+_todo: tiff_
+
 ## Build
 ```
 make
