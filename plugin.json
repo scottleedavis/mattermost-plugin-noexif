@@ -11,8 +11,16 @@
         }
     },
     "settings_schema": {
-        "header": "",
+        "header": "Configure the no EXIF plugin",
         "footer": "",
-        "settings": []
+        "settings": [
+            {
+                "key": "EnableMessage",
+                "display_name": "Enable upload message",
+                "type": "bool",
+                "help_text": "Enable or disable the notification that an uploaded photo had EXIF removed.",
+                "default": false
+            }
+        ]
     }
 }

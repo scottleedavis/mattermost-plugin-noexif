@@ -13,7 +13,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
-	"golang.org/x/image/tiff"
 )
 
 type FileTrack struct {
@@ -37,7 +36,7 @@ type Plugin struct {
 func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, file io.Reader, output io.Writer) (*model.FileInfo, string) {
 
 	switch strings.ToUpper(info.Extension) {
-	case "JPG", "JPEG", "PNG", "TIFF":
+	case "JPG", "JPEG", "PNG":
 		if data, err := ioutil.ReadAll(file); err != nil {
 			p.API.LogError(err.Error())
 			return nil, ""
@@ -55,10 +54,6 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 					p.API.LogError(err.Error())
 				} else {
 					p.TrackFileId(info)
-				}
-			case "TIFF":
-				if err := tiff.Encode(output, img, nil); err != nil {
-					p.API.LogError(err.Error())
 				}
 			}
 		}
@@ -95,11 +90,14 @@ func (p *Plugin) TrackFileId(info *model.FileInfo) {
 }
 
 func (p *Plugin) NotifyStatus(userId string, channelId string) {
-	time.Sleep(time.Millisecond * 500)
-	p.API.SendEphemeralPost(userId, &model.Post{
-		ChannelId: channelId,
-		Message:   "Your uploaded photos have had their location and EXIF data removed before being uploaded to the server.",
-	})
+	configuration := p.getConfiguration()
+	if configuration.EnableMessage {
+		time.Sleep(time.Millisecond * 500)
+		p.API.SendEphemeralPost(userId, &model.Post{
+			ChannelId: channelId,
+			Message:   "Your uploaded photos have had their location and EXIF data removed before being uploaded to the server.",
+		})
+	}
 }
 
 func contains(s []FileTrack, id string) bool {
