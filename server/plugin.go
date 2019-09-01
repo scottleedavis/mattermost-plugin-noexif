@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -27,6 +29,9 @@ const (
 	JpegMediaType  = "jpeg"
 	PngMediaType   = "png"
 	OtherMediaType = "other"
+	StartBytes    = 4
+	EndBytes      = 4
+	OffsetBytes   = 4
 )
 
 type MediaContext struct {
@@ -57,7 +62,11 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 			p.API.LogError(err.Error())
 			return nil, ""
 		} else {
-
+			_, _, err = image.Decode(bytes.NewReader(data))
+			if err != nil {
+				p.API.LogInfo("ERROR: original image is corrupt" + err.Error() + "\n")
+				return nil, ""
+			}
 			mc, entries := p.parseEXIF(data)
 			if len(entries) == 0 {
 				return nil, ""
@@ -91,19 +100,19 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 	p.API.LogInfo(fmt.Sprintf("****(exif) %x %s %x", sExif.Offset, sExif.MarkerName, len(sExif.Data)))
 
 	bytesCount := 0
-	startExifBytes := 4
-	endExifBytes := 4
+	startExifBytes := StartBytes
+	endExifBytes := EndBytes
 	for _, s := range sl.Segments() {
 
 		if s.MarkerName == sExif.MarkerName {
-			if startExifBytes == 4 {
+			if startExifBytes == StartBytes {
 				startExifBytes = bytesCount
-				endExifBytes = startExifBytes + len(s.Data)
+				endExifBytes = startExifBytes + len(s.Data) + OffsetBytes
 			} else {
-				endExifBytes += len(s.Data)
+				endExifBytes += len(s.Data) + OffsetBytes
 			}
 		}
-		bytesCount += len(s.Data)
+		bytesCount += len(s.Data) + OffsetBytes
 
 		p.API.LogInfo(fmt.Sprintf("%x %s %v (%x)", s.Offset, s.MarkerName, len(s.Data), s.Offset+len(s.Data)))
 
