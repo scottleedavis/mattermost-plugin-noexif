@@ -5,7 +5,9 @@ go 1.12
 require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/dsoprea/go-exif v0.0.0-20190421204329-061c6b48d883
-	github.com/dsoprea/go-logging v0.0.0-20190409182557-13b4fff49234 // indirect
+	github.com/dsoprea/go-jpeg-image-structure v0.0.0-20190422055009-d6f9ba25cf48
+	github.com/dsoprea/go-logging v0.0.0-20190409182557-13b4fff49234
+	github.com/dsoprea/go-png-image-structure v0.0.0-20190624104353-c9b28dcdc5c8
 	github.com/dyatlov/go-opengraph v0.0.0-20180429202543-816b6608b3c8 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/golang/geo v0.0.0-20190507233405-a0e886e97a51 // indirect

@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"github.com/dsoprea/go-exif"
+	"github.com/dsoprea/go-jpeg-image-structure"
+	"github.com/dsoprea/go-png-image-structure"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
 )
@@ -19,6 +21,19 @@ type Plugin struct {
 	configurationLock sync.RWMutex
 
 	configuration *configuration
+}
+
+const (
+	JpegMediaType  = "jpeg"
+	PngMediaType   = "png"
+	OtherMediaType = "other"
+)
+
+type MediaContext struct {
+	MediaType string
+	RootIfd   *exif.Ifd
+	RawExif   []byte
+	Media     interface{}
 }
 
 type IfdEntry struct {
@@ -42,90 +57,131 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 			p.API.LogError(err.Error())
 			return nil, ""
 		} else {
-			if rawExif, err := exif.SearchAndExtractExif(data); err != nil {
+			jmp := jpegstructure.NewJpegMediaParser()
+			pmp := pngstructure.NewPngMediaParser()
+			mc := &MediaContext{
+				MediaType: OtherMediaType,
+				RootIfd:   nil,
+				RawExif:   nil,
+				Media:     nil,
+			}
+
+			if jmp.LooksLikeFormat(data) {
+				mc.MediaType = JpegMediaType
+			} else if pmp.LooksLikeFormat(data) {
+				mc.MediaType = PngMediaType
+			}
+
+			switch mc.MediaType {
+			case JpegMediaType:
+				sl, _ := jmp.ParseBytes(data)
+				if err != nil {
+					return nil, ""
+				}
+
+				mc.Media = sl
+
+				rootIfd, rawExif, err := sl.Exif()
+				if err != nil {
+					return nil, ""
+				}
+
+				mc.RootIfd = rootIfd
+				mc.RawExif = rawExif
+
+			case PngMediaType:
+				cs, err := pmp.ParseBytes(data)
+				if err != nil {
+					return nil, ""
+				}
+
+				mc.Media = cs
+
+				rootIfd, rawExif, err := cs.Exif()
+				if err != nil {
+					return nil, ""
+				}
+
+				mc.RootIfd = rootIfd
+				mc.RawExif = rawExif
+			default:
+				return nil, ""
+			}
+
+			entries := p.extractEXIF(mc)
+
+			if data, err := json.MarshalIndent(entries, "", "    "); err != nil {
 				p.API.LogError(err.Error())
 				return nil, ""
 			} else {
-				im := exif.NewIfdMappingWithStandard()
-				ti := exif.NewTagIndex()
-
-				entries := make([]IfdEntry, 0)
-				visitor := func(fqIfdPath string, ifdIndex int, tagId uint16, tagType exif.TagType, valueContext exif.ValueContext) (err error) {
-					defer func() {
-						if state := recover(); state != nil {
-							p.API.LogError(state.(error).Error())
-						}
-					}()
-
-					ifdPath, err := im.StripPathPhraseIndices(fqIfdPath)
-					if err != nil {
-						p.API.LogError(err.Error())
-						return err
-					}
-
-					it, err := ti.Get(ifdPath, tagId)
-					if err != nil {
-						p.API.LogError(err.Error())
-						return err
-					}
-
-					valueString := ""
-					var value interface{}
-					if tagType.Type() == exif.TypeUndefined {
-						var err2 error
-						value, err2 = exif.UndefinedValue(ifdPath, tagId, valueContext, tagType.ByteOrder())
-						if err2 != nil {
-							p.API.LogError(err2.Error())
-							return err2
-						} else {
-							valueString = fmt.Sprintf("%v", value)
-						}
-					} else {
-						valueString, err = tagType.ResolveAsString(valueContext, true)
-						if err != nil {
-							p.API.LogError(err.Error())
-							return err
-						}
-
-						value = valueString
-					}
-
-					entry := IfdEntry{
-						IfdPath:     ifdPath,
-						FqIfdPath:   fqIfdPath,
-						IfdIndex:    ifdIndex,
-						TagId:       tagId,
-						TagName:     it.Name,
-						TagTypeId:   tagType.Type(),
-						TagTypeName: tagType.Name(),
-						UnitCount:   valueContext.UnitCount,
-						Value:       value,
-						ValueString: valueString,
-					}
-
-					entries = append(entries, entry)
-
-					return nil
-				}
-
-				_, err = exif.Visit(exif.IfdStandard, im, ti, rawExif, visitor)
-				if err != nil {
-					p.API.LogError(err.Error())
-					return nil, ""
-				}
-
-				//TODO strip out the EXIF information and save file
-				if data, err := json.MarshalIndent(entries, "", "    "); err != nil {
-					p.API.LogError(err.Error())
-					return nil, ""
-				} else {
-					p.API.LogInfo(string(data))
-				}
-
+				p.API.LogInfo(string(data))
 			}
 
+			//TODO remove these entries
 		}
 
 	}
 	return nil, ""
+}
+
+func (p *Plugin) extractEXIF(mc *MediaContext) (entries []IfdEntry) {
+	im := exif.NewIfdMappingWithStandard()
+	ti := exif.NewTagIndex()
+
+	entries = make([]IfdEntry, 0)
+	visitor := func(fqIfdPath string, ifdIndex int, tagId uint16, tagType exif.TagType, valueContext exif.ValueContext) (err error) {
+		defer func() {
+			if state := recover(); state != nil {
+				p.API.LogError(state.(error).Error())
+			}
+		}()
+
+		ifdPath, err := im.StripPathPhraseIndices(fqIfdPath)
+		if err != nil {
+			return err
+		}
+
+		it, err := ti.Get(ifdPath, tagId)
+		if err != nil {
+			return err
+		}
+
+		valueString := ""
+		var value interface{}
+		if tagType.Type() == exif.TypeUndefined {
+			value, err = exif.UndefinedValue(ifdPath, tagId, valueContext, tagType.ByteOrder())
+			if err != nil {
+				return err
+			} else {
+				valueString = fmt.Sprintf("%v", value)
+			}
+		} else {
+			valueString, err = tagType.ResolveAsString(valueContext, true)
+			if err != nil {
+				return err
+			}
+			value = valueString
+		}
+
+		entry := IfdEntry{
+			IfdPath:     ifdPath,
+			FqIfdPath:   fqIfdPath,
+			IfdIndex:    ifdIndex,
+			TagId:       tagId,
+			TagName:     it.Name,
+			TagTypeId:   tagType.Type(),
+			TagTypeName: tagType.Name(),
+			UnitCount:   valueContext.UnitCount,
+			Value:       value,
+			ValueString: valueString,
+		}
+
+		entries = append(entries, entry)
+
+		return nil
+	}
+
+	exif.Visit(exif.IfdStandard, im, ti, mc.RawExif, visitor)
+
+	return entries
 }
