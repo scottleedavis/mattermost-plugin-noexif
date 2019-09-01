@@ -87,7 +87,7 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 		return filtered, errors.New("No EXIF in image")
 	}
 	if err == nil {
-		p.API.LogInfo(fmt.Sprintf("****(exif) %x %s %v", sExif.Offset, sExif.MarkerName, len(sExif.Data)))
+		p.API.LogInfo(fmt.Sprintf("****(exif) %x %s %x", sExif.Offset, sExif.MarkerName, len(sExif.Data)))
 	}
 
 	bytesCount := 0
@@ -110,6 +110,8 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 	}
 
 	filtered = data[:startExifBytes]
+	zeros := make([]byte,endExifBytes-startExifBytes)
+	filtered = append(filtered, zeros...)
 	filtered = append(filtered, data[endExifBytes+4:]...)
 
 	//os.Remove("data.txt")
