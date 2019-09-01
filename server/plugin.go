@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -57,74 +57,128 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 			p.API.LogError(err.Error())
 			return nil, ""
 		} else {
-			jmp := jpegstructure.NewJpegMediaParser()
-			pmp := pngstructure.NewPngMediaParser()
-			mc := &MediaContext{
-				MediaType: OtherMediaType,
-				RootIfd:   nil,
-				RawExif:   nil,
-				Media:     nil,
+
+			mc, entries := p.parseEXIF(data)
+			if len(entries) == 0 {
+				return nil, ""
 			}
 
-			if jmp.LooksLikeFormat(data) {
-				mc.MediaType = JpegMediaType
-			} else if pmp.LooksLikeFormat(data) {
-				mc.MediaType = PngMediaType
-			}
+			filteredBytes := []byte{}
 
 			switch mc.MediaType {
 			case JpegMediaType:
-				sl, _ := jmp.ParseBytes(data)
-				if err != nil {
+				if filteredBytes, err = p.extractJPEGEXIF(mc, data, filteredBytes); err != nil {
 					return nil, ""
 				}
-
-				mc.Media = sl
-
-				rootIfd, rawExif, err := sl.Exif()
-				if err != nil {
-					return nil, ""
-				}
-
-				mc.RootIfd = rootIfd
-				mc.RawExif = rawExif
-
-			case PngMediaType:
-				cs, err := pmp.ParseBytes(data)
-				if err != nil {
-					return nil, ""
-				}
-
-				mc.Media = cs
-
-				rootIfd, rawExif, err := cs.Exif()
-				if err != nil {
-					return nil, ""
-				}
-
-				mc.RootIfd = rootIfd
-				mc.RawExif = rawExif
-			default:
-				return nil, ""
 			}
 
-			entries := p.extractEXIF(mc)
-
-			if data, err := json.MarshalIndent(entries, "", "    "); err != nil {
+			if _, err := output.Write(filteredBytes); err != nil {
 				p.API.LogError(err.Error())
-				return nil, ""
-			} else {
-				p.API.LogInfo(string(data))
 			}
-
-			//TODO remove these entries
 		}
-
 	}
 	return nil, ""
 }
 
-func (p *Plugin) extractEXIF(mc *MediaContext) (entries []IfdEntry) {
+func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte) ([]byte, error) {
+	sl := mc.Media.(*jpegstructure.SegmentList)
+	_, sExif, err := sl.FindExif()
+	if err != nil {
+		return filtered, errors.New("No EXIF in image")
+	}
+	if err == nil {
+		p.API.LogInfo(fmt.Sprintf("****(exif) %x %s %v", sExif.Offset, sExif.MarkerName, len(sExif.Data)))
+	}
+
+	bytesCount := 0
+	startExifBytes := 4
+	endExifBytes := 4
+	for _, s := range sl.Segments() {
+
+		if s.MarkerName == sExif.MarkerName {
+			if startExifBytes == 4 {
+				startExifBytes = bytesCount
+				endExifBytes = startExifBytes + len(s.Data)
+			} else {
+				endExifBytes += len(s.Data)
+			}
+		}
+		bytesCount += len(s.Data)
+
+		p.API.LogInfo(fmt.Sprintf("%x %s %v (%x)", s.Offset, s.MarkerName, len(s.Data), s.Offset+len(s.Data)))
+
+	}
+
+	filtered = data[:startExifBytes]
+	filtered = append(filtered, data[endExifBytes+4:]...)
+
+	//os.Remove("data.txt")
+	//f, _ := os.Create("data.txt")
+	//f.WriteString(hex.Dump(data[:len(filteredBytes)]))
+	//f.Close()
+	//os.Remove("filteredBytes.txt")
+	//f2, _ := os.Create("filteredBytes.txt")
+	//f2.WriteString(hex.Dump(filteredBytes))
+	//f2.Close()
+
+	p.API.LogInfo(fmt.Sprintf("********(size) %v %v  (%v)", len(data), len(filtered), len(data)-len(filtered)))
+
+	return filtered, nil
+}
+
+func (p *Plugin) parseEXIF(data []byte) (mc *MediaContext, entries []IfdEntry) {
+
+	jmp := jpegstructure.NewJpegMediaParser()
+	pmp := pngstructure.NewPngMediaParser()
+	mc = &MediaContext{
+		MediaType: OtherMediaType,
+		RootIfd:   nil,
+		RawExif:   nil,
+		Media:     nil,
+	}
+
+	if jmp.LooksLikeFormat(data) {
+		mc.MediaType = JpegMediaType
+	} else if pmp.LooksLikeFormat(data) {
+		mc.MediaType = PngMediaType
+	}
+
+	switch mc.MediaType {
+	case JpegMediaType:
+		sl, err := jmp.ParseBytes(data)
+		if err != nil {
+			return mc, []IfdEntry{}
+		}
+
+		mc.Media = sl
+
+		rootIfd, rawExif, err := sl.Exif()
+		if err != nil {
+			return mc, []IfdEntry{}
+		}
+
+		mc.RootIfd = rootIfd
+		mc.RawExif = rawExif
+
+	case PngMediaType:
+		cs, err := pmp.ParseBytes(data)
+		if err != nil {
+			return mc, []IfdEntry{}
+		}
+
+		mc.Media = cs
+
+		rootIfd, rawExif, err := cs.Exif()
+		if err != nil {
+			return mc, []IfdEntry{}
+		}
+
+		mc.RootIfd = rootIfd
+		mc.RawExif = rawExif
+	default:
+		return mc, []IfdEntry{}
+	}
+
 	im := exif.NewIfdMappingWithStandard()
 	ti := exif.NewTagIndex()
 
@@ -183,5 +237,5 @@ func (p *Plugin) extractEXIF(mc *MediaContext) (entries []IfdEntry) {
 
 	exif.Visit(exif.IfdStandard, im, ti, mc.RawExif, visitor)
 
-	return entries
+	return mc, entries
 }
