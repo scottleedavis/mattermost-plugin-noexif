@@ -110,8 +110,6 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 	}
 
 	filtered = data[:startExifBytes]
-	zeros := make([]byte,endExifBytes-startExifBytes)
-	filtered = append(filtered, zeros...)
 	filtered = append(filtered, data[endExifBytes+4:]...)
 
 	//os.Remove("data.txt")
