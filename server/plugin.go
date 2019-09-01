@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"image"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -116,10 +114,11 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 
 	p.API.LogInfo(fmt.Sprintf("********(size) %v %v  (%v)", len(data), len(filtered), len(data)-len(filtered)))
 
-	_, _, err = image.Decode(bytes.NewReader(filtered))
-	if err != nil {
-		return nil, errors.New("EXIF extraction corrupted image " + err.Error())
-	}
+	//TODO enable when > 95% effective EXIF without corruption
+	//_, _, err = image.Decode(bytes.NewReader(filtered))
+	//if err != nil {
+	//	return nil, errors.New("EXIF extraction corrupted image " + err.Error())
+	//}
 
 	return filtered, nil
 }
