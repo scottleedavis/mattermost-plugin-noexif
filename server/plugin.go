@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -68,6 +70,7 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 			switch mc.MediaType {
 			case JpegMediaType:
 				if filteredBytes, err = p.extractJPEGEXIF(mc, data, filteredBytes); err != nil {
+					p.API.LogError(err.Error())
 					return nil, ""
 				}
 			}
@@ -84,11 +87,10 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 	sl := mc.Media.(*jpegstructure.SegmentList)
 	_, sExif, err := sl.FindExif()
 	if err != nil {
-		return filtered, errors.New("No EXIF in image")
+		return nil, errors.New("No EXIF in image")
 	}
-	if err == nil {
-		p.API.LogInfo(fmt.Sprintf("****(exif) %x %s %x", sExif.Offset, sExif.MarkerName, len(sExif.Data)))
-	}
+
+	p.API.LogInfo(fmt.Sprintf("****(exif) %x %s %x", sExif.Offset, sExif.MarkerName, len(sExif.Data)))
 
 	bytesCount := 0
 	startExifBytes := 4
@@ -110,18 +112,14 @@ func (p *Plugin) extractJPEGEXIF(mc *MediaContext, data []byte, filtered []byte)
 	}
 
 	filtered = data[:startExifBytes]
-	filtered = append(filtered, data[endExifBytes+4:]...)
-
-	//os.Remove("data.txt")
-	//f, _ := os.Create("data.txt")
-	//f.WriteString(hex.Dump(data[:len(filteredBytes)]))
-	//f.Close()
-	//os.Remove("filteredBytes.txt")
-	//f2, _ := os.Create("filteredBytes.txt")
-	//f2.WriteString(hex.Dump(filteredBytes))
-	//f2.Close()
+	filtered = append(filtered, data[endExifBytes:]...)
 
 	p.API.LogInfo(fmt.Sprintf("********(size) %v %v  (%v)", len(data), len(filtered), len(data)-len(filtered)))
+
+	_, _, err = image.Decode(bytes.NewReader(filtered))
+	if err != nil {
+		return nil, errors.New("EXIF extraction corrupted image " + err.Error())
+	}
 
 	return filtered, nil
 }
