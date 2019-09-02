@@ -3,13 +3,12 @@ package main
 import (
 	"bytes"
 	"image"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"io/ioutil"
 	"strings"
 	"sync"
 
+	"github.com/scottleedavis/go-exif-remove"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
 )
@@ -28,21 +27,22 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 	case "JPG", "JPEG", "PNG":
 		if data, err := ioutil.ReadAll(file); err != nil {
 			p.API.LogError(err.Error())
-			return nil, ""
+			return nil, err.Error()
 		} else {
-			img, _, _ := image.Decode(bytes.NewReader(data))
-			switch strings.ToUpper(info.Extension) {
-			case "JPG", "JPEG":
-				if err := jpeg.Encode(output, img, nil); err != nil {
-					p.API.LogError(err.Error())
-				}
-			case "PNG":
-				if err := png.Encode(output, img); err != nil {
+			if _, _, err = image.Decode(bytes.NewReader(data)); err != nil {
+				errMsg := "ERROR: original image is corrupt " + err.Error()
+				p.API.LogInfo(errMsg)
+				return nil, errMsg
+			}
+			if filtered, err := exifremove.Remove(data); err != nil {
+				p.API.LogError(err.Error())
+				return nil, err.Error()
+			} else {
+				if _, err := output.Write(filtered); err != nil {
 					p.API.LogError(err.Error())
 				}
 			}
 		}
 	}
-
 	return nil, ""
 }
