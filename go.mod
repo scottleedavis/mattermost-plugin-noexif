@@ -22,7 +22,7 @@ require (
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.3.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/scottleedavis/go-exif-remove v0.0.0-20190902210608-b25a47538306 // indirect
+	github.com/scottleedavis/go-exif-remove v0.0.0-20190902210608-b25a47538306
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/stretchr/testify v1.4.0

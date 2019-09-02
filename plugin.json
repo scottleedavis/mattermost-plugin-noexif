@@ -2,7 +2,7 @@
     "id": "com.github.scottleedavis.mattermost-plugin-noexif",
     "name": "No EXIF Plugin",
     "description": "Strips EXIF information from uploaded images",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -11,16 +11,9 @@
         }
     },
     "settings_schema": {
-        "header": "Configure the no EXIF plugin",
+        "header": "",
         "footer": "",
         "settings": [
-            {
-                "key": "EnableMessage",
-                "display_name": "Enable upload message",
-                "type": "bool",
-                "help_text": "Enable or disable the notification that an uploaded photo had EXIF removed.",
-                "default": false
-            }
         ]
     }
 }

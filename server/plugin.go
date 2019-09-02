@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/scottleedavis/go-exif-remove"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/scottleedavis/go-exif-remove"
 )
 
 type Plugin struct {
