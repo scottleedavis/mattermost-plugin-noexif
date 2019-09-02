@@ -1,5 +1,5 @@
 # Mattermost Plugin NoEXIF
-[![Build Status](https://img.shields.io/circleci/project/github/scottleedavis/mattermost-plugin-noexif/master.svg)](https://circleci.com/gh/scottleedavis/mattermost-plugin-noexif) [![codecov](https://codecov.io/gh/scottleedavis/mattermost-plugin-noexif/branch/master/graph/badge.svg)](https://codecov.io/gh/scottleedavis/mattermost-plugin-noexif)  [![GoDoc](https://godoc.org/github.com/scottleedavis/mattermost-plugin-noexif?status.svg)](https://godoc.org/github.com/scottleedavis/mattermost-plugin-noexif)
+[![Build Status](https://img.shields.io/circleci/project/github/scottleedavis/mattermost-plugin-noexif/master.svg)](https://circleci.com/gh/scottleedavis/mattermost-plugin-noexif) [![codecov](https://codecov.io/gh/scottleedavis/mattermost-plugin-noexif/branch/master/graph/badge.svg)](https://codecov.io/gh/scottleedavis/mattermost-plugin-noexif)  
 
 This plugin strips EXIF information from images uploaded to mattermost.
 
