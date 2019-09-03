@@ -5,6 +5,7 @@
 This plugin removes EXIF information from images uploaded to [Mattermost](http://mattermost.com).
 Currently supports jpg/jpeg, and png files.
 
+_Requires Mattermost 5.9 or higher_
 
 ## Build
 ```
