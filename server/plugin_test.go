@@ -12,7 +12,6 @@ import (
 	"github.com/mattermost/mattermost-server/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
 )
 
 func TestFileWillBeUpload(t *testing.T) {
