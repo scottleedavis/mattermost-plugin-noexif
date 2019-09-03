@@ -38,6 +38,11 @@ func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, fil
 				p.API.LogError(err.Error())
 				return nil, err.Error()
 			} else {
+				if _, _, err = image.Decode(bytes.NewReader(filtered)); err != nil {
+					errMsg := "ERROR: filtered image is corrupt " + err.Error()
+					p.API.LogInfo(errMsg)
+					return nil, errMsg
+				}
 				if _, err := output.Write(filtered); err != nil {
 					p.API.LogError(err.Error())
 				}
