@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
@@ -15,10 +14,6 @@ import (
 
 type Plugin struct {
 	plugin.MattermostPlugin
-
-	configurationLock sync.RWMutex
-
-	configuration *configuration
 }
 
 func (p *Plugin) FileWillBeUploaded(c *plugin.Context, info *model.FileInfo, file io.Reader, output io.Writer) (*model.FileInfo, string) {
