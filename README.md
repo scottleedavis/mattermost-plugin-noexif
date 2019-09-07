@@ -15,7 +15,7 @@ make
 This will produce a single plugin file (with support for multiple architectures) for upload to your Mattermost server:
 
 ```
-dist/com.example.my-plugin.tar.gz
+dist/com.github.scottleedavis.mattermost-plugin-noexif.tar.gz
 ```
 
 There is a build target to automate deploying and enabling the plugin to your server, but it requires configuration and [http](https://httpie.org/) to be installed:
