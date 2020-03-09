@@ -3,6 +3,7 @@
     "name": "No EXIF Plugin",
     "description": "Strips EXIF information from uploaded images",
     "version": "0.1.1",
+    "min_server_version": "5.9.0",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
